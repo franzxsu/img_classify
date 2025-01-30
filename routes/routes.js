@@ -24,46 +24,47 @@ router.get('/', (req, res) => {
   res.render('index', { progress: 0 });
 });
 
-router.post('/upload', upload.array('images'), async (req, res) => {
+router.post('/upload', upload.any(), async (req, res) => {
     const files = req.files;
     if (!files || files.length === 0) {
-        console.log("no files")
-      return res.status(400).send('no files uploaded');
+      return res.status(400).send('No files uploaded.');
     }
   
     try {
+      console.log('Files received:', files); // Log the files
+  
+      // Organize files by class
       const classFiles = {};
       for (const file of files) {
-        
-        const className = file.fieldname;
-        console.log(className)
+        const className = file.fieldname; // Fieldname is the class name
         if (!classFiles[className]) {
           classFiles[className] = [];
         }
         classFiles[className].push(file);
       }
   
-      //upload files to S3
+      // Upload files to S3
       for (const className in classFiles) {
         for (const file of classFiles[className]) {
           const params = {
             Bucket: "image-classify-uploads",
-
-            //NOT WORKING!!!
-            Key: `datasets/${className}/${file.filename}`,
-            
-            Body: fs.createReadStream(file.path),
+            Key: `datasets/${className}/${file.originalname}`, // Store in class-specific folder
+            Body: fs.createReadStream(file.path), // Stream the file
           };
-          await s3.upload(params).promise();
-          fs.unlinkSync(file.path);
+  
+          console.log('Uploading file:', file.originalname); // Log the file being uploaded
+  
+          const uploadResult = await s3.upload(params).promise();
+          console.log('File uploaded successfully:', uploadResult.Location); // Log the S3 URL
+  
+          fs.unlinkSync(file.path); // Delete the local file
         }
       }
-      console.log("ok")
-      res.send('file upload successful');
+  
+      res.send('Files uploaded to S3 successfully.');
     } catch (err) {
-        console.log("er")
-      console.error(err);
-      res.status(500).send('error uploading to s3');
+      console.error('Error uploading files to S3:', err); // Log the error
+      res.status(500).send('Error uploading files to S3.');
     }
   });
 
@@ -85,14 +86,5 @@ router.post('/predict', upload.single('image'), (req, res) => {
   }
   res.json({ prediction: 'dog (69.420%)' }); //sample response
 });
-
-
-
-
-
-
-
-
-
 
 module.exports = router;
