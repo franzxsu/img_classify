@@ -1,0 +1,30 @@
+{
+  "name": "img_classify",
+  "version": "1.0.0",
+  "description": "image classification web application",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franzxsu/img_classify.git"
+  },
+  "keywords": [
+    "image",
+    "classification"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/franzxsu/img_classify/issues"
+  },
+  "homepage": "https://github.com/franzxsu/img_classify#readme",
+  "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
