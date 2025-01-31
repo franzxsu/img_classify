@@ -79,7 +79,7 @@ router.post('/upload', upload.any(), async (req, res) => {
                 },
             },
             AppSpecification: {
-                ImageUri: '382416733822.dkr.ecr.ap-southeast-2.amazonaws.com/sklearn-processing:latest', // Preprocessing container image
+                ImageUri: '869935076851.dkr.ecr.ap-southeast-2.amazonaws.com/sklearn-processing:latest', // Preprocessing container image
             },
             RoleArn: 'arn:aws:iam::869935076851:role/amazonsagemaker', // Replace with your SageMaker role ARN
             ProcessingInputs: [{
