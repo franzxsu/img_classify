@@ -74,12 +74,12 @@ router.post('/upload', upload.any(), async (req, res) => {
             ProcessingResources: {
                 ClusterConfig: {
                     InstanceCount: 1,
-                    InstanceType: 'ml.m5.large', // Instance type for processing
+                    InstanceType: 'ml.t3.medium', // Instance type for processing
                     VolumeSizeInGB: 50, // Size of the EBS volume
                 },
             },
             AppSpecification: {
-                ImageUri: '382416733822.dkr.ecr.us-east-1.amazonaws.com/sklearn-processing:latest', // Preprocessing container image
+                ImageUri: '382416733822.dkr.ecr.ap-southeast-2.amazonaws.com/sklearn-processing:latest', // Preprocessing container image
             },
             RoleArn: 'arn:aws:iam::869935076851:role/amazonsagemaker', // Replace with your SageMaker role ARN
             ProcessingInputs: [{
