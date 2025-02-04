@@ -54,7 +54,7 @@ router.post('/upload', upload.any(), async (req, res) => {
         for (const className in classFiles) {
             for (const file of classFiles[className]) {
                 const params = {
-                    Bucket: "image-classify-uploads",
+                    Bucket: "img-classification",
                     Key: `datasets/${className}/${file.originalname}`, // Store in class-specific folder
                     Body: fs.createReadStream(file.path), // Stream the file
                 };
@@ -68,50 +68,13 @@ router.post('/upload', upload.any(), async (req, res) => {
             }
         }
 
-        //PREPROCESSING 
-        const processingJobParams = {
-            ProcessingJobName: `image-preprocessing-${Date.now()}`, // Unique job name
-            ProcessingResources: {
-                ClusterConfig: {
-                    InstanceCount: 1,
-                    InstanceType: 'ml.t3.medium', // Instance type for processing
-                    VolumeSizeInGB: 50, // Size of the EBS volume
-                },
-            },
-            AppSpecification: {
-                ImageUri: '869935076851.dkr.ecr.ap-southeast-2.amazonaws.com/sklearn-processing:latest', // Preprocessing container image
-            },
-            RoleArn: 'arn:aws:iam::869935076851:role/amazonsagemaker', // Replace with your SageMaker role ARN
-            ProcessingInputs: [{
-                InputName: 'input-data',
-                S3Input: {
-                    S3Uri: 's3://image-classify-uploads/datasets/', // Path to raw data in S3
-                    LocalPath: '/opt/ml/processing/input', // Local path in the processing container
-                    S3DataType: 'S3Prefix',
-                    S3InputMode: 'File',
-                },
-            }, ],
-            ProcessingOutputConfig: {
-                Outputs: [{
-                    OutputName: 'output-data',
-                    S3Output: {
-                        S3Uri: 's3://image-classify-preprocessed/datasets/', // Path to save preprocessed data
-                        LocalPath: '/opt/ml/processing/output', // Local path in the processing container
-                        S3UploadMode: 'EndOfJob',
-                    },
-                }, ],
-            },
-        };
-
-        const processingJob = await sagemaker.createProcessingJob(processingJobParams).promise();
-        console.log('Processing job started:', processingJob.ProcessingJobArn);
-
-        res.send('Files uploaded to S3 and preprocessing job started.');
+        res.send('Files uploaded to S3 successfully.');
     } catch (err) {
         console.error('Error uploading files to S3:', err); // Log the error
         res.status(500).send('Error uploading files to S3.');
     }
 });
+
 
 
 router.post('/train', (req, res) => {

@@ -9,3 +9,10 @@ docker tag sklearn-processing:latest 8699-3507-6851.dkr.ecr.ap-southeast-2.amazo
 
 # Push the Docker image to ECR
 docker push 8699-3507-6851.dkr.ecr.ap-southeast-2.amazonaws.com/sklearn-processing:latest
+
+
+
+
+
+
+node server.js
