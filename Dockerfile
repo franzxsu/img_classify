@@ -1,8 +1,13 @@
-FROM python:3.8-slim
+FROM python:3.9
 
 # Install dependencies
-RUN pip install pillow tensorflow
+RUN pip install --no-cache-dir tensorflow pillow numpy
 
-COPY preprocess.py /opt/ml/processing/preprocess.py
+# Set the working directory
+WORKDIR /opt/ml/code
 
-ENTRYPOINT ["python", "/opt/ml/processing/preprocess.py"]
+# Copy script to container
+COPY preprocess.py .
+
+# Define the entrypoint
+ENTRYPOINT ["python", "preprocess.py"]

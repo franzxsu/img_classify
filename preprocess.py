@@ -4,7 +4,6 @@ from PIL import Image
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-# Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--input-dir', type=str, default='/opt/ml/processing/input')
 parser.add_argument('--output-dir', type=str, default='/opt/ml/processing/output')
