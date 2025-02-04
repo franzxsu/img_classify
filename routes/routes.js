@@ -1,34 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const AWS = require('aws-sdk');
-const path = require('path');
+const {Storage} = require('@google-cloud/storage');
 const fs = require('fs');
 
-
-const s3 = new AWS.S3({
-    region: 'ap-southeast-2',
-});
-const sagemaker = new AWS.SageMaker({ 
-  region: 'ap-southeast-2'
- });
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    },
-});
-const upload = multer({
-    storage
+// Initialize Google Cloud Storage with service account credentials
+const storage = new Storage({
+    
 });
 
 router.get('/', (req, res) => {
+
     res.render('index', {
-        progress: 0
+    progress: 0
     });
+});
+
+// Function to generate a unique bucket name (you can customize this)
+function generateBucketName() {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 15); // Add some randomness
+    return `image-classification-bucket-${timestamp}-${random}`; // Or any scheme you like
+}
+
+
+// Multer setup
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, 'uploads/');
+        },
+        filename: (req, file, cb) => {
+            cb(null, Date.now() + '-' + file.originalname);
+        },
+    })
 });
 
 router.post('/upload', upload.any(), async (req, res) => {
@@ -38,65 +43,42 @@ router.post('/upload', upload.any(), async (req, res) => {
     }
 
     try {
-        console.log('Files received:', files);
+        const bucketName = generateBucketName();
+        await storage.createBucket(bucketName);
 
-        // Organize files by class
+        console.log(`Bucket ${bucketName} created successfully.`);
+
+        const bucket = storage.bucket(bucketName);
+
         const classFiles = {};
         for (const file of files) {
-            const className = file.fieldname; // Fieldname is the class name
+            const className = file.fieldname;
             if (!classFiles[className]) {
                 classFiles[className] = [];
             }
             classFiles[className].push(file);
         }
 
-        // Upload files to S3
         for (const className in classFiles) {
             for (const file of classFiles[className]) {
-                const params = {
-                    Bucket: "img-classification",
-                    Key: `datasets/${className}/${file.originalname}`, // Store in class-specific folder
-                    Body: fs.createReadStream(file.path), // Stream the file
-                };
+                const destFileName = `datasets/${className}/${file.originalname}`;
+                await bucket.upload(file.path, {
+                    destination: destFileName,
+                    metadata: {
+                        contentType: file.mimetype,
+                    },
+                });
 
-                console.log('Uploading file:', file.originalname); // Log the file being uploaded
-
-                const uploadResult = await s3.upload(params).promise();
-                console.log('File uploaded successfully:', uploadResult.Location); // Log the S3 URL
-
+                console.log(`File ${file.originalname} uploaded to gs://${bucketName}/${destFileName}`);
                 fs.unlinkSync(file.path); // Delete the local file
             }
         }
 
-        res.send('Files uploaded to S3 successfully.');
+        res.send(`Files uploaded to bucket ${bucketName} successfully.`); // Send back bucket name
     } catch (err) {
-        console.error('Error uploading files to S3:', err); // Log the error
-        res.status(500).send('Error uploading files to S3.');
+        console.error('Error uploading files or creating bucket:', err);
+        res.status(500).send('Error uploading files or creating bucket.');
     }
-});
-
-
-
-router.post('/train', (req, res) => {
-    res.send('Training started.');
-
-
-});
-
-router.get('/progress', (req, res) => {
-    res.json({
-        progress: 50
-    }); //sample only
-});
-
-router.post('/predict', upload.single('image'), (req, res) => {
-    const file = req.file;
-    if (!file) {
-        return res.status(400).send('error, no image read');
-    }
-    res.json({
-        prediction: 'dog (69.420%)'
-    }); //sample response
 });
 
 module.exports = router;

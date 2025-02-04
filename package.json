@@ -22,8 +22,8 @@
   },
   "homepage": "https://github.com/franzxsu/img_classify#readme",
   "dependencies": {
-    "aws": "^0.0.3-2",
-    "aws-sdk": "^2.1692.0",
+    "@google-cloud/aiplatform": "^3.34.0",
+    "@google-cloud/storage": "^7.15.0",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-router": "^0.0.1",
