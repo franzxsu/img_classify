@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const {Storage} = require('@google-cloud/storage');
-const fs = require('fs');
+
+const sharp = require('sharp');
+const fs = require('fs').promises;
 
 // Initialize Google Cloud Storage with service account credentials
 const storage = new Storage({
@@ -39,46 +41,50 @@ const upload = multer({
 router.post('/upload', upload.any(), async (req, res) => {
     const files = req.files;
     if (!files || files.length === 0) {
-        return res.status(400).send('No files uploaded.');
+      return res.status(400).send('No files uploaded.');
     }
-
+  
     try {
-        const bucketName = generateBucketName();
-        await storage.createBucket(bucketName);
-
-        console.log(`Bucket ${bucketName} created successfully.`);
-
-        const bucket = storage.bucket(bucketName);
-
-        const classFiles = {};
-        for (const file of files) {
-            const className = file.fieldname;
-            if (!classFiles[className]) {
-                classFiles[className] = [];
-            }
-            classFiles[className].push(file);
+      const bucketName = generateBucketName();
+      await storage.createBucket(bucketName);
+      console.log(`Bucket ${bucketName} created successfully.`);
+  
+      const bucket = storage.bucket(bucketName);
+  
+      const classFiles = {};
+      for (const file of files) {
+        const className = file.fieldname;
+        if (!classFiles[className]) {
+          classFiles[className] = [];
         }
+        classFiles[className].push(file);
+      }
+  
+      for (const className in classFiles) {
+        for (const file of classFiles[className]) {
 
-        for (const className in classFiles) {
-            for (const file of classFiles[className]) {
-                const destFileName = `datasets/${className}/${file.originalname}`;
-                await bucket.upload(file.path, {
-                    destination: destFileName,
-                    metadata: {
-                        contentType: file.mimetype,
-                    },
-                });
-
-                console.log(`File ${file.originalname} uploaded to gs://${bucketName}/${destFileName}`);
-                fs.unlinkSync(file.path); // Delete the local file
-            }
+          const processedImageBuffer = await sharp(file.path)
+            .resize(224, 224)
+            .toFormat('jpeg')
+            .toBuffer();
+  
+          const destFileName = `datasets/${className}/${file.originalname}`;
+  
+          // Use save() instead of upload() to upload processed image buffer
+          const processedFile = bucket.file(destFileName);
+          await processedFile.save(processedImageBuffer, {
+            contentType: 'image/jpeg', // Set content type to match format
+          });
+  
+          console.log(`Processed file ${file.originalname} uploaded to gs://${bucketName}/${destFileName}`);
         }
-
-        res.send(`Files uploaded to bucket ${bucketName} successfully.`); // Send back bucket name
+      }
+  
+      res.send(`Files uploaded to bucket ${bucketName} successfully.`);
     } catch (err) {
-        console.error('Error uploading files or creating bucket:', err);
-        res.status(500).send('Error uploading files or creating bucket.');
+      console.error('Error uploading files or creating bucket:', err);
+      res.status(500).send('Error uploading files or creating bucket.');
     }
-});
+  });
 
 module.exports = router;
