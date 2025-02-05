@@ -1,45 +1,50 @@
-const { DatasetServiceClient } = require('@google-cloud/aiplatform');
+/**
+ * TODO(developer): Uncomment these variables before running the sample.\
+ * (Not necessary if passing values as arguments)
+ */
 
-const PROJECT_ID = 'your-project-id'; // Replace with your actual project ID
-const LOCATION = 'us-central1'; // Replace with your region
-const DATASET_DISPLAY_NAME = 'Image Classification Dataset'; // Name for your dataset
+const datasetDisplayName = "dataset images";
+const project = 'mystic-centaur-449921-n1';
+const location = 'us-central1';
 
-async function createDataset() {
-    const client = new DatasetServiceClient();
+// Imports the Google Cloud Dataset Service Client library
+const {DatasetServiceClient} = require('@google-cloud/aiplatform');
 
-    const request = {
-        parent: `projects/${PROJECT_ID}/locations/${LOCATION}`,
-        dataset: {
-            displayName: DATASET_DISPLAY_NAME,
-            metadataSchemaUri: 'gs://google-cloud-aiplatform/schema/dataset/metadata/image_1.0.0.yaml',
-            metadata: {
-                // Specify the input data configuration for image classification
-                inputDataConfig: [
-                    {
-                        gcsSource: {
-                            inputUris: [
-                                'gs://img-classificationasdasd/datasets/train/',
-                                'gs://img-classificationasdasd/datasets/validation/',
-                                'gs://img-classificationasdasd/datasets/test/',
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    };
+// Specifies the location of the api endpoint
+const clientOptions = {
+  apiEndpoint: 'us-central1-aiplatform.googleapis.com',
+};
 
-    try {
-        console.log('Creating dataset...');
-        const [operation] = await client.createDataset(request);
-        const [dataset] = await operation.promise();
-        console.log(`Dataset created successfully: ${dataset.name}`);
-        return dataset.name; // Return dataset ID
-    } catch (err) {
-        console.error("Failed to create dataset:", err);
-        throw new Error(err.message); // Rethrow error for handling
-    }
+// Instantiates a client
+const datasetServiceClient = new DatasetServiceClient(clientOptions);
+
+async function createDatasetImage() {
+  // Configure the parent resource
+  const parent = `projects/${project}/locations/${location}`;
+  // Configure the dataset resource
+  const dataset = {
+    displayName: datasetDisplayName,
+    metadataSchemaUri:
+      'gs://google-cloud-aiplatform/schema/dataset/metadata/image_1.0.0.yaml',
+  };
+  const request = {
+    parent,
+    dataset,
+  };
+
+  // Create Dataset Request
+  const [response] = await datasetServiceClient.createDataset(request);
+  console.log(`Long running operation: ${response.name}`);
+
+  // Wait for operation to complete
+  await response.promise();
+  const result = response.result;
+
+  console.log('Create dataset image response');
+  console.log(`Name : ${result.name}`);
+  console.log(`Display name : ${result.displayName}`);
+  console.log(`Metadata schema uri : ${result.metadataSchemaUri}`);
+  console.log(`Metadata : ${JSON.stringify(result.metadata)}`);
+  console.log(`Labels : ${JSON.stringify(result.labels)}`);
 }
-
-// Call the function to create the dataset
-createDataset().catch(console.error);
+createDatasetImage();
