@@ -8,6 +8,7 @@ const fs = require('fs').promises;
 // Initialize Google Cloud Storage with service account credentials
 const storage = new Storage();
 const BUCKET_NAME = "img-classificationasdasd"; // Fixed bucket name
+
 const bucket = storage.bucket(BUCKET_NAME);
 
 // Multer setup
@@ -65,6 +66,7 @@ router.post('/upload', upload.any(), async (req, res) => {
                 console.log(`Uploaded: gs://${BUCKET_NAME}/${destFileName}`);
             }
         }
+
 
         res.send(`Files successfully uploaded and structured in GCS.`);
     } catch (err) {
