@@ -7,8 +7,8 @@ const fs = require('fs').promises;
 
 // Initialize Google Cloud Storage with service account credentials
 const storage = new Storage();
-const bucketName = "img-classificationasdasd"; // Fixed bucket name
-const bucket = storage.bucket(bucketName);
+const BUCKET_NAME = "img-classificationasdasd"; // Fixed bucket name
+const bucket = storage.bucket(BUCKET_NAME);
 
 // Multer setup
 const upload = multer({
@@ -31,42 +31,53 @@ router.post('/upload', upload.any(), async (req, res) => {
     }
 
     try {
-        // Organize files by class (fieldname = class label)
         const classFiles = {};
+
+        // Group files by class name
         for (const file of files) {
-            const className = file.fieldname; // Class name from fieldname
+            const className = file.fieldname;
             if (!classFiles[className]) {
                 classFiles[className] = [];
             }
             classFiles[className].push(file);
         }
 
-        // Upload images to the correct structure
+        // Upload files to GCS with proper structure
         for (const className in classFiles) {
             for (const file of classFiles[className]) {
-                // Process the image (resize & convert to JPEG)
+                const datasetCategory = getDatasetCategory(); // Assign dataset category
+
+                // **Preprocess image (resize + convert to JPEG)**
                 const processedImageBuffer = await sharp(file.path)
-                    .resize(224, 224)
-                    .toFormat('jpeg')
+                    .resize(224, 224) // Resize to 224x224 for consistency
+                    .toFormat('jpeg') // Convert to JPEG
                     .toBuffer();
 
-                const destFileName = `datasets/${className}/${file.originalname}`;
-                const processedFile = bucket.file(destFileName);
+                // Destination path in GCS
+                const destFileName = `datasets/${datasetCategory}/${className}/${file.originalname}`;
+                const gcsFile = bucket.file(destFileName);
 
-                // Upload processed image buffer
-                await processedFile.save(processedImageBuffer, {
-                    contentType: 'image/jpeg',
+                // Upload the processed image buffer to GCS
+                await gcsFile.save(processedImageBuffer, {
+                    contentType: 'image/jpeg', // Ensure correct content type
                 });
 
-                console.log(`Uploaded: gs://${bucketName}/${destFileName}`);
+                console.log(`Uploaded: gs://${BUCKET_NAME}/${destFileName}`);
             }
         }
 
-        res.send(`Files uploaded successfully to gs://${bucketName}/datasets/`);
+        res.send(`Files successfully uploaded and structured in GCS.`);
     } catch (err) {
-        console.error('Upload error:', err);
+        console.error('Error processing upload:', err);
         res.status(500).send('Error uploading files.');
     }
-});
+})
+
+function getDatasetCategory() {
+    const random = Math.random();
+    if (random < 0.7) return 'train';        // 70% training
+    else if (random < 0.85) return 'validation'; // 15% validation
+    else return 'test';                      // 15% test
+}
 
 module.exports = router;
